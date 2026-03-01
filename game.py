@@ -6,8 +6,10 @@ import pygame
 WIDTH = 800
 HEIGHT = 600
 GRID_SIZE = 20
-BG_COLOR = (20, 20, 30)
-GRID_COLOR = (40, 40, 50)
+
+# Decent modern dark-mode colors
+BG_COLOR = (24, 64, 27)    # Dark Zinc/Charcoal
+GRID_COLOR = (24, 100, 42)  # Slightly lighter Zinc for the grid lines
 
 class Particle:
     """Represents a single spark in a firecracker animation."""
@@ -102,7 +104,7 @@ class Game:
         """Place food in a random empty cell."""
         all_positions = [(x, y) for x in range(self.width) for y in range(self.height)]
         occupied = set(self.snake.segments)
-        possible = [pos for pos in all_positions if pos not in occupied]
+        possible = [pos for x, y in all_positions if (pos := (x, y)) not in occupied]
         if not possible:
             self.apple = None
         else:
@@ -202,8 +204,10 @@ class Game:
         }
 
     def draw_grid(self, surface: pygame.Surface) -> None:
-        """Draw vertical and horizontal lines on the provided surface."""
-        for x in range(0, WIDTH + 1, GRID_SIZE):
-            pygame.draw.line(surface, GRID_COLOR, (x, 0), (x, HEIGHT))
-        for y in range(0, HEIGHT + 1, GRID_SIZE):
-            pygame.draw.line(surface, GRID_COLOR, (0, y), (WIDTH, y))
+        """Draw a subtle grid of lines on the provided surface."""
+        # Draw vertical lines
+        for x in range(0, self.width * GRID_SIZE + 1, GRID_SIZE):
+            pygame.draw.line(surface, GRID_COLOR, (x, 0), (x, self.height * GRID_SIZE))
+        # Draw horizontal lines
+        for y in range(0, self.height * GRID_SIZE + 1, GRID_SIZE):
+            pygame.draw.line(surface, GRID_COLOR, (0, y), (self.width * GRID_SIZE, y))

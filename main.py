@@ -55,7 +55,10 @@ def draw_ui(screen: pygame.Surface, game: Game):
 
 
 def draw_entities(screen: pygame.Surface, game: Game) -> None:
-    """Draw the snake, food, and particles with enhanced visual effects."""
+    """Draw the background grid, snake, food, and particles with enhanced visual effects."""
+    # Draw the grid first so it stays in the background
+    game.draw_grid(screen)
+    
     game_state = game.get_state()
     cell_size = GRID_SIZE
     eat_timer = game_state.get("eat_animation_timer", 0.0)
@@ -196,9 +199,8 @@ def main() -> None:
 
         # Rendering
         screen.fill(BG_COLOR)
-        game.draw_grid(screen)
         
-        # Draw entities in all states (static when not playing)
+        # Draw entities (including the background grid) in all states
         draw_entities(screen, game)
         
         # Draw UI overlays
