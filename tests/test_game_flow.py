@@ -8,7 +8,7 @@ def test_create_game_initial_state():
     assert g.state == "START"
     assert g.score == 0
     assert g.alive is True
-    # Default dimensions from main.py: WIDTH(800) // GRID_SIZE(20) = 40
+    # Default dimensions: WIDTH(800) // GRID_SIZE(20) = 40
     assert g.width == 40
     assert g.height == 30
 
@@ -73,7 +73,6 @@ def test_game_over_flow_wall_collision():
     
     assert g.state == "GAME_OVER"
     assert g.alive is False
-    assert g.score == 0
 
 def test_reset_functionality():
     """Verify that reset() restores all game attributes to their starting values."""

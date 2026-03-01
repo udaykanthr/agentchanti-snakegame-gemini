@@ -29,7 +29,6 @@ def test_get_state():
     """Verify get_state returns the correct dictionary representation."""
     g = Game(width=5, height=5)
     state = g.get_state()
-    # Game.get_state() returns: snake, head_color, body_color, eye_color, food, alive, score, state, etc.
     assert state["alive"] is True
     assert "snake" in state
     assert "food" in state
