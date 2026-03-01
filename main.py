@@ -55,7 +55,7 @@ def draw_ui(screen: pygame.Surface, game: Game):
 
 
 def draw_entities(screen: pygame.Surface, game: Game) -> None:
-    """Draw the snake and food with enhanced visual effects."""
+    """Draw the snake, food, and particles with enhanced visual effects."""
     game_state = game.get_state()
     cell_size = GRID_SIZE
     eat_timer = game_state.get("eat_animation_timer", 0.0)
@@ -132,6 +132,18 @@ def draw_entities(screen: pygame.Surface, game: Game) -> None:
             for e in [e1, e2]:
                 pygame.draw.circle(screen, eye_w, (int(e[0]), int(e[1])), int(3 * head_scale))
                 pygame.draw.circle(screen, eye_p, (int(e[0]), int(e[1])), int(1 * head_scale))
+
+    # Draw firecracker particles
+    particles = game_state.get("particles", [])
+    for p in particles:
+        pos = p["pos"]
+        color = p["color"]
+        alpha = p["alpha"]
+        
+        # Create a small surface for the particle to support alpha
+        p_surf = pygame.Surface((4, 4), pygame.SRCALPHA)
+        pygame.draw.circle(p_surf, (*color, alpha), (2, 2), 2)
+        screen.blit(p_surf, (int(pos[0] - 2), int(pos[1] - 2)))
 
 
 def main() -> None:

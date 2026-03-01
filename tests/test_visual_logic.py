@@ -43,18 +43,25 @@ def test_snake_update_animation_timers():
     assert snake.eat_animation_timer == 0.0
 
 def test_game_update_animations_propagation():
-    """Verify that Game.update_animations() updates both snake and apple timers."""
+    """Verify that Game.update_animations() updates snake, apple, and particles."""
     game = Game(width=10, height=10)
     game.food = (5, 5)
+    
+    # Trigger some particles
+    game._spawn_firecracker(5, 5)
+    initial_particle_count = len(game.particles)
+    assert initial_particle_count > 0
     
     initial_snake_pulse = game.snake.pulse_timer
     initial_apple_pulse = game.apple.pulse_timer
     
-    dt = 0.123
+    dt = 0.1
     game.update_animations(dt)
     
     assert game.snake.pulse_timer == pytest.approx(initial_snake_pulse + dt)
     assert game.apple.pulse_timer == pytest.approx(initial_apple_pulse + dt)
+    # Particle lifetimes should decrease
+    assert game.particles[0].lifetime == pytest.approx(0.4 - dt)
 
 def test_game_update_animations_no_apple():
     """Verify that Game.update_animations() does not crash if there is no apple."""
@@ -66,7 +73,7 @@ def test_game_update_animations_no_apple():
     assert game.snake.pulse_timer == pytest.approx(0.1)
 
 def test_eat_animation_trigger_on_tick():
-    """Verify that eat_animation_timer is triggered (set to 0.2) when food is consumed."""
+    """Verify that eat_animation_timer and particles are triggered when food is consumed."""
     game = Game(width=10, height=10)
     game.state = "PLAYING"
     
@@ -76,17 +83,21 @@ def test_eat_animation_trigger_on_tick():
     game.food = (5, 4)
     
     assert game.snake.eat_animation_timer == 0.0
+    assert len(game.particles) == 0
     
     game.tick()
     
     # Check that the timer was set to the specific value defined in game.py
     assert game.snake.eat_animation_timer == pytest.approx(0.2)
     assert game.score == 10
+    # Particles should have been spawned
+    assert len(game.particles) > 0
 
 def test_get_state_visual_data():
     """Verify get_state contains all necessary keys for rendering animations."""
     game = Game(width=10, height=10)
     game.snake.eat_animation_timer = 0.15
+    game._spawn_firecracker(2, 2)
     
     state = game.get_state()
     
@@ -94,4 +105,7 @@ def test_get_state_visual_data():
     assert "body_color" in state
     assert "eye_color" in state
     assert "eat_animation_timer" in state
+    assert "particles" in state
     assert state["eat_animation_timer"] == pytest.approx(0.15)
+    assert len(state["particles"]) > 0
+    assert "alpha" in state["particles"][0]

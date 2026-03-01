@@ -1,4 +1,5 @@
 import random
+import math
 from typing import List, Tuple, Optional, Dict, Any
 import pygame
 
@@ -7,6 +8,27 @@ HEIGHT = 600
 GRID_SIZE = 20
 BG_COLOR = (20, 20, 30)
 GRID_COLOR = (40, 40, 50)
+
+class Particle:
+    """Represents a single spark in a firecracker animation."""
+    def __init__(self, x: float, y: float, color: Tuple[int, int, int]):
+        self.x = x
+        self.y = y
+        self.color = color
+        # Random direction and speed
+        angle = random.uniform(0, 2 * math.pi)
+        speed = random.uniform(50, 150)
+        self.vx = math.cos(angle) * speed
+        self.vy = math.sin(angle) * speed
+        self.lifetime = 0.4  # seconds
+        self.initial_lifetime = 0.4
+
+    def update(self, dt: float) -> bool:
+        """Update particle position and lifetime. Returns False if dead."""
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        self.lifetime -= dt
+        return self.lifetime > 0
 
 class Apple:
     """Represents the food item with animation properties."""
@@ -60,6 +82,7 @@ class Game:
         
         self.direction = (0, -1)  # Initially moving Up
         self.apple: Optional[Apple] = None
+        self.particles: List[Particle] = []
         self._place_food()
 
     @property
@@ -84,6 +107,16 @@ class Game:
             self.apple = None
         else:
             self.apple = Apple(random.choice(possible))
+
+    def _spawn_firecracker(self, grid_x: int, grid_y: int) -> None:
+        """Create a burst of particles at the specified grid cell."""
+        center_x = grid_x * GRID_SIZE + GRID_SIZE // 2
+        center_y = grid_y * GRID_SIZE + GRID_SIZE // 2
+        colors = [(255, 255, 255), (255, 200, 50), (255, 100, 0)] # White, Yellow, Orange
+        
+        for _ in range(20):
+            color = random.choice(colors)
+            self.particles.append(Particle(center_x, center_y, color))
 
     def set_direction(self, dx: int, dy: int) -> None:
         """Update direction if it is not a 180-degree turn."""
@@ -121,6 +154,8 @@ class Game:
             self.score += 10
             # Trigger pop animation when eating
             self.snake.eat_animation_timer = 0.2
+            # Trigger firecracker particles
+            self._spawn_firecracker(new_head[0], new_head[1])
             self._place_food()
         else:
             self.snake.segments.pop()
@@ -133,13 +168,17 @@ class Game:
         self.alive = True
         self.state = "PLAYING"
         self.score = 0
+        self.particles = []
         self._place_food()
 
     def update_animations(self, dt: float) -> None:
-        """Update all animation timers."""
+        """Update all animation timers and particle physics."""
         if self.apple:
             self.apple.update_animation(dt)
         self.snake.update_animation(dt)
+        
+        # Update particles and filter out dead ones
+        self.particles = [p for p in self.particles if p.update(dt)]
 
     def get_state(self) -> Dict[str, Any]:
         """Return the current state of the game for rendering."""
@@ -152,7 +191,14 @@ class Game:
             "alive": self.alive,
             "score": self.score,
             "state": self.state,
-            "eat_animation_timer": self.snake.eat_animation_timer
+            "eat_animation_timer": self.snake.eat_animation_timer,
+            "particles": [
+                {
+                    "pos": (p.x, p.y),
+                    "color": p.color,
+                    "alpha": int(255 * (p.lifetime / p.initial_lifetime))
+                } for p in self.particles
+            ]
         }
 
     def draw_grid(self, surface: pygame.Surface) -> None:
