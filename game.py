@@ -17,21 +17,18 @@ class Particle:
         self.x = x
         self.y = y
         self.color = color
-        # Random direction and speed
         angle = random.uniform(0, 2 * math.pi)
         speed = random.uniform(80, 200)
         self.vx = math.cos(angle) * speed
         self.vy = math.sin(angle) * speed
-        self.lifetime = 0.5  # seconds
+        self.lifetime = 0.5  
         self.initial_lifetime = 0.5
 
     def update(self, dt: float) -> bool:
         """Update particle position and lifetime with air resistance."""
-        # Apply frame-rate independent drag
         drag = 0.1 ** dt
         self.vx *= drag
         self.vy *= drag
-        
         self.x += self.vx * dt
         self.y += self.vy * dt
         self.lifetime -= dt
@@ -44,50 +41,41 @@ class Apple:
         self.pulse_timer = 0.0
 
     def update_animation(self, dt: float) -> None:
-        """Update the animation timer for the apple."""
         self.pulse_timer += dt
 
     def get_scale(self) -> float:
-        """Calculate the current scale based on a sine wave for a breathing effect."""
         return 1.0 + 0.15 * math.sin(self.pulse_timer * 8.0)
 
 class Snake:
     """Represents the snake with visual attributes and animation timers."""
     def __init__(self, segments: List[Tuple[int, int]]):
         self.segments = segments
-        self.body_color = (152, 251, 152)  # Pastel Green
-        self.head_color = (255, 182, 193)  # Pastel Pink
-        self.eye_color = (255, 255, 255)   # White eyes
+        self.body_color = (152, 251, 152)
+        self.head_color = (255, 182, 193)
+        self.eye_color = (255, 255, 255)
         self.eat_animation_timer = 0.0
         self.pulse_timer = 0.0
 
     def set_cute_style(self) -> None:
-        """Explicitly set the cute aesthetic colors."""
         self.body_color = (152, 251, 152)
         self.head_color = (255, 182, 193)
         self.eye_color = (255, 255, 255)
 
     def update_animation(self, dt: float) -> None:
-        """Update the animation timers for the snake."""
         self.pulse_timer += dt
         if self.eat_animation_timer > 0:
             self.eat_animation_timer = max(0.0, self.eat_animation_timer - dt)
 
     def get_head_scale(self) -> float:
-        """Calculate a 'pop' scale effect when the snake eats."""
         if self.eat_animation_timer > 0:
-            # Bounce effect using half a sine wave over 0.2 seconds
             return 1.0 + 0.4 * math.sin((self.eat_animation_timer / 0.2) * math.pi)
         return 1.0
 
     def get_segment_colors(self) -> List[Tuple[int, int, int]]:
-        """Generate a color gradient for the snake body."""
         if not self.segments:
             return []
-        
         colors = [self.head_color]
         for i in range(1, len(self.segments)):
-            # Gradient from body_color to a slightly darker shade
             ratio = i / max(1, len(self.segments) - 1)
             r = int(self.body_color[0] * (1.0 - ratio * 0.25))
             g = int(self.body_color[1] * (1.0 - ratio * 0.25))
@@ -102,19 +90,25 @@ class Game:
             raise ValueError("Game dimensions must be at least 3x3")
         self.width = width
         self.height = height
+        self.margin_top = 4
         
         self.state = "PLAYING"
         self.score = 0
+        self.lives = 3
         self.alive = True
         
-        mid_x, mid_y = width // 2, height // 2
-        self.snake = Snake([(mid_x, mid_y), (mid_x, mid_y + 1), (mid_x, mid_y + 2)])
-        
+        self._respawn_snake()
         self.direction = (0, -1)
         self.apple: Optional[Apple] = None
         self.particles: List[Particle] = []
         self.shake_amount = 0.0
         self._place_food()
+
+    def _respawn_snake(self) -> None:
+        mid_x = self.width // 2
+        mid_y = (self.margin_top + self.height) // 2
+        self.snake = Snake([(mid_x, mid_y), (mid_x, mid_y + 1), (mid_x, mid_y + 2)])
+        self.direction = (0, -1)
 
     @property
     def food(self) -> Optional[Tuple[int, int]]:
@@ -128,7 +122,7 @@ class Game:
             self.apple = Apple(value)
 
     def _place_food(self) -> None:
-        all_positions = [(x, y) for x in range(self.width) for y in range(self.height)]
+        all_positions = [(x, y) for x in range(self.width) for y in range(self.margin_top, self.height)]
         occupied = set(self.snake.segments)
         possible = [pos for pos in all_positions if pos not in occupied]
         if not possible:
@@ -160,32 +154,35 @@ class Game:
         dx, dy = self.direction
         new_head = (head_x + dx, head_y + dy)
 
-        # Boundary and self-collision check
-        if not (0 <= new_head[0] < self.width and 0 <= new_head[1] < self.height) or new_head in self.snake.segments:
-            self.alive = False
-            self.state = "GAME_OVER"
-            self.shake_amount = 12.0  # Big shake on death
+        # Collision check
+        if not (0 <= new_head[0] < self.width and self.margin_top <= new_head[1] < self.height) or new_head in self.snake.segments:
+            self.lives -= 1
+            self.shake_amount = 12.0
+            if self.lives <= 0:
+                self.alive = False
+                self.state = "GAME_OVER"
+            else:
+                self._respawn_snake()
             return
 
         self.snake.segments.insert(0, new_head)
         if self.apple and new_head == self.apple.position:
             self.score += 10
             self.snake.eat_animation_timer = 0.2
-            self.shake_amount = 4.0   # Small shake on eat
+            self.shake_amount = 4.0
             self._spawn_firecracker(new_head[0], new_head[1])
             self._place_food()
         else:
             self.snake.segments.pop()
 
     def reset(self) -> None:
-        mid_x, mid_y = self.width // 2, self.height // 2
-        self.snake = Snake([(mid_x, mid_y), (mid_x, mid_y + 1), (mid_x, mid_y + 2)])
-        self.direction = (0, -1)
+        self.score = 0
+        self.lives = 3
         self.alive = True
         self.state = "PLAYING"
-        self.score = 0
         self.particles = []
         self.shake_amount = 0.0
+        self._respawn_snake()
         self._place_food()
 
     def update_animations(self, dt: float) -> None:
@@ -197,7 +194,6 @@ class Game:
             self.shake_amount = max(0.0, self.shake_amount - dt * 30.0)
 
     def get_state(self) -> Dict[str, Any]:
-        """Return the current visual state for the renderer."""
         shake_off = (0, 0)
         if self.shake_amount > 0:
             shake_off = (random.uniform(-self.shake_amount, self.shake_amount),
@@ -215,7 +211,9 @@ class Game:
             "shake_offset": shake_off,
             "alive": self.alive,
             "score": self.score,
+            "lives": self.lives,
             "state": self.state,
+            "margin_top": self.margin_top,
             "eat_animation_timer": self.snake.eat_animation_timer,
             "particles": [
                 {
@@ -227,9 +225,17 @@ class Game:
         }
 
     def draw_grid(self, surface: pygame.Surface, offset: Tuple[float, float] = (0, 0)) -> None:
-        """Render the background grid with a shake offset."""
         ox, oy = offset
         for x in range(0, self.width * GRID_SIZE + 1, GRID_SIZE):
-            pygame.draw.line(surface, GRID_COLOR, (x + ox, oy), (x + ox, self.height * GRID_SIZE + oy))
-        for y in range(0, self.height * GRID_SIZE + 1, GRID_SIZE):
-            pygame.draw.line(surface, GRID_COLOR, (ox, y + oy), (self.width * GRID_SIZE + ox, y + oy))
+            pygame.draw.line(surface, GRID_COLOR, 
+                             (x + ox, self.margin_top * GRID_SIZE + oy), 
+                             (x + ox, self.height * GRID_SIZE + oy))
+        for y in range(self.margin_top * GRID_SIZE, self.height * GRID_SIZE + 1, GRID_SIZE):
+            pygame.draw.line(surface, GRID_COLOR, 
+                             (ox, y + oy), 
+                             (self.width * GRID_SIZE + ox, y + oy))
+
+def create_game() -> Game:
+    game = Game()
+    game.state = "START"
+    return game

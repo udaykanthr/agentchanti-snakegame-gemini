@@ -109,3 +109,12 @@ def test_get_state_visual_data():
     assert state["eat_animation_timer"] == pytest.approx(0.15)
     assert len(state["particles"]) > 0
     assert "alpha" in state["particles"][0]
+
+def test_game_get_state_includes_lives():
+    """Verify get_state contains lives and UI layout info like margin_top."""
+    game = Game(width=10, height=10)
+    state = game.get_state()
+    assert "lives" in state
+    assert "score" in state
+    assert "margin_top" in state
+    assert state["lives"] == 3

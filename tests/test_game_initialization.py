@@ -32,11 +32,12 @@ def test_initial_state_dimensions():
 def test_initial_snake_setup_with_defaults():
     """
     Verify that a newly created game with default dimensions (40x30) has a snake
-    placed in the middle of the board.
+    placed in the middle of the playable board (margin_top=4).
     """
     g = Game()
-    # Default mid points for 40x30
-    mid_x, mid_y = 20, 15
+    # Default mid points for 40x30 with margin_top 4: 
+    # mid_x = 20, mid_y = (4 + 30) // 2 = 17
+    mid_x, mid_y = 20, 17
     expected_segments = [(mid_x, mid_y), (mid_x, mid_y + 1), (mid_x, mid_y + 2)]
     
     assert g.snake.segments == expected_segments
@@ -47,12 +48,12 @@ def test_initial_snake_setup_with_defaults():
 def test_initial_snake_setup_custom():
     """
     Verify that a newly created game with custom dimensions has a snake
-    placed in the middle of the board.
+    placed in the middle of the playable board.
     """
     width, height = 20, 20
     g = Game(width=width, height=height)
     
-    mid_x, mid_y = width // 2, height // 2
+    mid_x, mid_y = width // 2, (g.margin_top + height) // 2
     expected_segments = [(mid_x, mid_y), (mid_x, mid_y + 1), (mid_x, mid_y + 2)]
     
     assert g.snake.segments == expected_segments
@@ -63,7 +64,7 @@ def test_set_direction_logic():
     Setting a direction that is not the reverse of the current one should
     update the snake's direction. Reverses should be ignored.
     """
-    g = Game(width=10, height=10)
+    g = Game(width=10, height=20)
     # Current direction is Up (0, -1)
     
     # Valid: Right
@@ -84,7 +85,7 @@ def test_set_direction_logic():
 
 def test_set_direction_ignore_dead_game():
     """set_direction must be ignored if the game is over."""
-    g = Game(width=10, height=10)
+    g = Game(width=10, height=20)
     # set_direction checks for self.state == "GAME_OVER"
     g.state = "GAME_OVER"
     g.alive = False

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Pygame entry point for the Snake game.
-Consumes advanced visual state logic from game.py to render enhanced graphics.
+Renders the arena, entities, and UI including a scoreboard in the top margin.
 """
 
 import sys
@@ -18,35 +18,49 @@ def create_game() -> Game:
     return game
 
 
-def draw_text(screen: pygame.Surface, text: str, size: int, color: Tuple[int, int, int], y_offset: int = 0):
-    """Utility to render centered text with an optional vertical offset."""
+def draw_text(screen: pygame.Surface, text: str, size: int, color: Tuple[int, int, int], x: int, y: int, center: bool = True):
+    """Utility to render text at a specific position."""
     font = pygame.font.SysFont("Verdana", size, bold=True)
     text_surf = font.render(text, True, color)
-    text_rect = text_surf.get_rect(center=(WIDTH // 2, HEIGHT // 2 + y_offset))
+    if center:
+        text_rect = text_surf.get_rect(center=(x, y))
+    else:
+        text_rect = text_surf.get_rect(topleft=(x, y))
     screen.blit(text_surf, text_rect)
 
 
 def draw_ui(screen: pygame.Surface, game: Game):
-    """Render UI overlays based on the current game state."""
+    """Render UI overlays and the scoreboard based on the current game state."""
+    game_state = game.get_state()
+    margin_px = game_state["margin_top"] * GRID_SIZE
+
+    # Always draw the scoreboard background in the top margin
+    pygame.draw.rect(screen, (18, 48, 20), pygame.Rect(0, 0, WIDTH, margin_px))
+    pygame.draw.line(screen, (255, 255, 255, 50), (0, margin_px), (WIDTH, margin_px), 2)
+
+    # Render Score and Lives
+    draw_text(screen, f"SCORE: {game_state['score']}", 24, (255, 255, 255), 20, margin_px // 2, center=False)
+    
+    # Draw Lives as cute hearts or circles
+    lives_x = WIDTH - 150
+    draw_text(screen, "LIVES:", 20, (255, 182, 193), lives_x, margin_px // 2, center=False)
+    for i in range(game_state["lives"]):
+        pygame.draw.circle(screen, (231, 76, 60), (lives_x + 85 + i * 25, margin_px // 2 + 2), 8)
+
     if game.state == "START":
         overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 100))
         screen.blit(overlay, (0, 0))
-        draw_text(screen, "CUTE SNAKE", 72, (255, 182, 193), -50)
-        draw_text(screen, "Press SPACE to Play", 32, (255, 255, 255), 40)
-
-    elif game.state == "PLAYING":
-        font = pygame.font.SysFont("Verdana", 24, bold=True)
-        score_surf = font.render(f"Score: {game.score}", True, (255, 255, 255))
-        screen.blit(score_surf, (20, 20))
+        draw_text(screen, "CUTE SNAKE", 72, (255, 182, 193), WIDTH // 2, HEIGHT // 2 - 50)
+        draw_text(screen, "Press SPACE to Play", 32, (255, 255, 255), WIDTH // 2, HEIGHT // 2 + 40)
 
     elif game.state == "GAME_OVER":
         overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 160))
         screen.blit(overlay, (0, 0))
-        draw_text(screen, "GAME OVER", 72, (231, 76, 60), -60)
-        draw_text(screen, f"Final Score: {game.score}", 40, (255, 255, 255), 10)
-        draw_text(screen, "Press R to Restart or Q to Quit", 24, (200, 200, 200), 80)
+        draw_text(screen, "GAME OVER", 72, (231, 76, 60), WIDTH // 2, HEIGHT // 2 - 60)
+        draw_text(screen, f"Final Score: {game_state['score']}", 40, (255, 255, 255), WIDTH // 2, HEIGHT // 2 + 10)
+        draw_text(screen, "Press R to Restart or Q to Quit", 24, (200, 200, 200), WIDTH // 2, HEIGHT // 2 + 80)
 
 
 def draw_entities(screen: pygame.Surface, game: Game) -> None:
@@ -68,10 +82,9 @@ def draw_entities(screen: pygame.Surface, game: Game) -> None:
         scaled_size = base_size * food_scale
         margin = (cell_size - scaled_size) / 2
         
-        # Draw apple body
         pygame.draw.rect(
             screen,
-            (231, 76, 60), # Bright Red
+            (231, 76, 60),
             pygame.Rect(
                 int(fx * cell_size + margin + shake_x), 
                 int(fy * cell_size + margin + shake_y), 
@@ -109,19 +122,16 @@ def draw_entities(screen: pygame.Surface, game: Game) -> None:
             cy = sy * cell_size + cell_size // 2 + shake_y
             off = 4 * seg_scale
             
-            # Position eyes based on current direction
             if dx == 0 and dy == -1: e1, e2 = (cx - off, cy - off), (cx + off, cy - off)
             elif dx == 0 and dy == 1: e1, e2 = (cx - off, cy + off), (cx + off, cy + off)
             elif dx == -1 and dy == 0: e1, e2 = (cx - off, cy - off), (cx - off, cy + off)
             else: e1, e2 = (cx + off, cy - off), (cx + off, cy + off)
             
             for e in [e1, e2]:
-                # Eye whites
                 pygame.draw.circle(screen, eye_color, (int(e[0]), int(e[1])), int(3 * seg_scale))
-                # Pupils
                 pygame.draw.circle(screen, (0, 0, 0), (int(e[0]), int(e[1])), int(1 * seg_scale))
 
-    # Draw particles with alpha transparency
+    # Draw particles
     for p in game_state.get("particles", []):
         pos, color, alpha = p["pos"], p["color"], p["alpha"]
         p_surf = pygame.Surface((4, 4), pygame.SRCALPHA)
@@ -138,7 +148,7 @@ def main() -> None:
     game = create_game()
     clock = pygame.time.Clock()
     logic_timer = 0.0
-    logic_interval = 0.1 # 10 moves per second
+    logic_interval = 0.1 
 
     while True:
         dt = clock.tick(60) / 1000.0
@@ -159,17 +169,14 @@ def main() -> None:
                     if event.key == pygame.K_r: game.reset()
                     elif event.key == pygame.K_q: pygame.quit(); sys.exit()
 
-        # Update visual animations every frame
         game.update_animations(dt)
         
-        # Update game logic at the fixed interval
         if game.state == "PLAYING":
             logic_timer += dt
             if logic_timer >= logic_interval:
                 game.tick()
                 logic_timer = 0
 
-        # Rendering
         screen.fill(BG_COLOR)
         draw_entities(screen, game)
         draw_ui(screen, game)
