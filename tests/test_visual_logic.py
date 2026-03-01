@@ -60,8 +60,8 @@ def test_game_update_animations_propagation():
     
     assert game.snake.pulse_timer == pytest.approx(initial_snake_pulse + dt)
     assert game.apple.pulse_timer == pytest.approx(initial_apple_pulse + dt)
-    # Particle lifetimes should decrease
-    assert game.particles[0].lifetime == pytest.approx(0.4 - dt)
+    # Particle lifetimes should decrease from initial 0.5
+    assert game.particles[0].lifetime == pytest.approx(0.5 - dt)
 
 def test_game_update_animations_no_apple():
     """Verify that Game.update_animations() does not crash if there is no apple."""

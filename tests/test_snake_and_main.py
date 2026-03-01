@@ -29,8 +29,8 @@ def test_create_game_helper():
     # Check if cute style was applied
     assert g.snake.body_color == (152, 251, 152)
     
-    # Check if snake is placed in the middle (40//2, 30//2)
-    mid_x, mid_y = 20, 15
+    # Check if snake is placed in the middle (40//2, (4+30)//2)
+    mid_x, mid_y = 20, 17
     expected = [(mid_x, mid_y), (mid_x, mid_y + 1), (mid_x, mid_y + 2)]
     assert g.snake.segments == expected
     

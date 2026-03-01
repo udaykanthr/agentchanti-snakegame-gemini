@@ -61,9 +61,10 @@ def test_score_increment_flow():
     assert g.food != (5, 9)
 
 def test_game_over_flow_wall_collision():
-    """Verify the transition to GAME_OVER when hitting a boundary."""
+    """Verify the transition to GAME_OVER when hitting a boundary with 1 life remaining."""
     g = Game(width=10, height=20)
     g.state = "PLAYING"
+    g.lives = 1
     
     # Place head at the left edge
     g.snake.segments = [(0, 10), (1, 10), (2, 10)]

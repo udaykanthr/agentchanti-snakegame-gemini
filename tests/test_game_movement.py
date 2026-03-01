@@ -11,7 +11,7 @@ def test_tick_updates_head_position(monkeypatch):
     g = Game() # Default dimensions: 40x30, margin_top: 4
     g.state = "PLAYING"
     
-    # Initial head is at (20, 15), default direction is Up (0, -1)
+    # Initial head is at (20, 17), default direction is Up (0, -1)
     g.snake.segments = [(20, 15), (20, 16), (20, 17)]
     g.tick()
     
